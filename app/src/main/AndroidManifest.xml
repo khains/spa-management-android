@@ -5,9 +5,10 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
+        android:name=".SpaApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Spa Management"
+        android:label="@string/app_name"
         android:theme="@style/Theme.SpaManagement"
         android:usesCleartextTraffic="true">
 

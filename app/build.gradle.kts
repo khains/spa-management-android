@@ -1,7 +1,19 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// Doc thong tin keystore tu file keystore.properties (khong commit file nay len git).
+// Neu chua tao file, build release se bao loi ro rang thay vi loi kho hieu.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+val hasKeystoreProperties = keystorePropertiesFile.exists()
+if (hasKeystoreProperties) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -17,13 +29,40 @@ android {
 
         // Doi thanh dia chi IP/domain cua backend that khi build
         // Vi du chay local: "http://10.0.2.2:5000/" (10.0.2.2 la localhost tren Android emulator)
-        buildConfigField("String", "BASE_URL", "\"http://192.168.101.149:5000/\"")
+        buildConfigField("String", "BASE_URL", "\"https://spa-management-backend.onrender.com/\"")
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+
+    signingConfigs {
+        if (hasKeystoreProperties) {
+            create("release") {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
     }
 
     buildTypes {
         release {
+            // Doi BASE_URL sang domain backend that (https) khi phat hanh chinh thuc
+            buildConfigField("String", "BASE_URL", "\"https://spa-management-backend.onrender.com/\"")
+
+            // Tam de false de tranh R8 lam vo Gson (parse JSON qua reflection).
+            // Neu muon bat minify, can bo sung day du quy tac -keep cho cac data class trong proguard-rules.pro
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+            if (hasKeystoreProperties) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            // Neu chua co keystore.properties: Gradle se KHONG tu dong ky APK release.
+            // File tao ra se la app-release-unsigned.apk va KHONG cai truc tiep len may duoc,
+            // can tao keystore.properties (xem huong dan trong README) roi build lai.
         }
     }
 
@@ -72,5 +111,5 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.5")
 }

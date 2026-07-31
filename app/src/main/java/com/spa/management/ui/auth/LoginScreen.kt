@@ -19,7 +19,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, vm: LoginViewModel = viewModel()) {
 
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Spa Management", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text("Homie Beauty", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
             Text("Đăng nhập để tiếp tục", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(24.dp))
