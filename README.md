@@ -131,7 +131,64 @@ android/app/src/main/java/com/spa/management/
 
 ---
 
-## 3. Luồng nghiệp vụ tóm tắt
+## 3. Build bản Release (để phát hành / cài đặt chính thức)
+
+Khác với bản debug (chỉ để test nội bộ), bản **release** bắt buộc phải được **ký (signing)** bằng key riêng của bạn trước khi cài lên máy thật hoặc đưa lên Play Store.
+
+### Bước 1 — Tạo keystore (chỉ làm 1 lần, giữ file này thật kỹ, mất là không sửa/update app được nữa)
+
+```bash
+keytool -genkeypair -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias spa-management-key
+```
+
+Lệnh này sẽ hỏi mật khẩu keystore, thông tin công ty/tên... rồi tạo ra file `release-key.jks`. Đặt file này ở thư mục `android/` (ngang hàng `settings.gradle.kts`).
+
+### Bước 2 — Khai báo thông tin keystore
+
+```bash
+cd android
+cp keystore.properties.example keystore.properties
+```
+
+Mở `keystore.properties` vừa tạo, điền đúng mật khẩu và alias bạn đã đặt ở bước 1. **File này chứa mật khẩu nên tuyệt đối không commit lên Git** (đã có sẵn trong `.gitignore`).
+
+### Bước 3 — Đổi BASE_URL sang domain backend thật
+
+Mở `android/app/build.gradle.kts`, tìm trong `buildTypes { release { ... } }`, sửa dòng:
+
+```kotlin
+buildConfigField("String", "BASE_URL", "\"https://api.your-domain.com/\"")
+```
+
+thành domain backend thật đã deploy (nên dùng `https://`, không nên dùng `http://` cho bản release).
+
+### Bước 4 — Build
+
+**Qua Android Studio (khuyên dùng, có GUI hướng dẫn từng bước):**
+Build → Generate Signed Bundle / APK → chọn **APK** (hoặc **Android App Bundle** nếu định đưa lên Play Store) → chọn file `release-key.jks` vừa tạo, nhập mật khẩu → chọn build variant **release** → Finish.
+
+**Qua dòng lệnh:**
+```bash
+cd android
+./gradlew assembleRelease
+# hoặc trên Windows:
+gradlew.bat assembleRelease
+```
+
+File kết quả nằm ở: `android/app/build/outputs/apk/release/app-release.apk`
+
+> Nếu chưa tạo `keystore.properties`, lệnh trên vẫn chạy được nhưng ra file **`app-release-unsigned.apk`** — file này **không cài trực tiếp lên máy được** vì chưa ký. Phải hoàn thành bước 1–2 ở trên trước.
+
+### Lưu ý về ProGuard/R8 (thu gọn code)
+File cấu hình hiện để `isMinifyEnabled = false` (không thu gọn/làm rối code) để đảm bảo an toàn — vì app dùng Gson để parse JSON qua reflection, nếu bật minify mà chưa khai báo đủ quy tắc `-keep` cho các data class trong `data/model/Models.kt` thì app có thể bị crash khi parse dữ liệu từ API. Nếu muốn giảm dung lượng APK bằng minify, cần bổ sung thêm rule vào `app/proguard-rules.pro`, ví dụ:
+
+```proguard
+-keep class com.spa.management.data.model.** { *; }
+```
+
+---
+
+## 4. Luồng nghiệp vụ tóm tắt
 
 1. **Tạo khách hàng** → hồ sơ với ghi chú da liễu, nguồn khách
 2. **Gán gói liệu trình** cho khách (chọn từ danh sách mẫu gói đã tạo sẵn) → hệ thống tự tính ngày hết hạn = ngày bắt đầu + thời hạn gói
@@ -143,7 +200,7 @@ android/app/src/main/java/com/spa/management/
 
 ---
 
-## 4. Hạn chế hiện tại / gợi ý mở rộng thêm
+## 5. Hạn chế hiện tại / gợi ý mở rộng thêm
 
 - Chưa có màn hình xem "lịch trống của kỹ thuật viên" trực quan dạng lịch (mới có API `/api/appointments/availability` trả dữ liệu thô để FE tự dựng UI)
 - Chưa có màn hình danh sách thanh toán/báo cáo doanh thu tổng hợp
